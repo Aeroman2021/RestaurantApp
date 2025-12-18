@@ -67,4 +67,12 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new RuntimeException("order Not found"));
         return new OrderResponseDto(order.getId(),order.getStatus(),order.getOrderNumber());
     }
+
+    @Override
+    public void deleteById(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("order Not found"));
+        orderRepository.delete(order);
+    }
+
 }
