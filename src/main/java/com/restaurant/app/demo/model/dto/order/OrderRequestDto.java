@@ -1,4 +1,4 @@
-package com.restaurant.app.demo.model.dto;
+package com.restaurant.app.demo.model.dto.order;
 
 import com.restaurant.app.demo.model.entity.OrderItem;
 import com.restaurant.app.demo.model.entity.enums.Status;

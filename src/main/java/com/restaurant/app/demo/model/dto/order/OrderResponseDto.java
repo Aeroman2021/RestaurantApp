@@ -1,8 +1,6 @@
-package com.restaurant.app.demo.model.dto;
+package com.restaurant.app.demo.model.dto.order;
 
 import com.restaurant.app.demo.model.entity.enums.Status;
-
-import java.util.List;
 
 public record OrderResponseDto(
         Long orderId,

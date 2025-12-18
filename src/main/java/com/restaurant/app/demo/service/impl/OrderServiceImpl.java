@@ -1,7 +1,7 @@
 package com.restaurant.app.demo.service.impl;
 
-import com.restaurant.app.demo.model.dto.OrderRequestDto;
-import com.restaurant.app.demo.model.dto.OrderResponseDto;
+import com.restaurant.app.demo.model.dto.order.OrderRequestDto;
+import com.restaurant.app.demo.model.dto.order.OrderResponseDto;
 import com.restaurant.app.demo.model.entity.Order;
 import com.restaurant.app.demo.model.entity.User;
 import com.restaurant.app.demo.model.entity.enums.Status;
@@ -12,8 +12,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 

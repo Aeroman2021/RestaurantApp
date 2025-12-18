@@ -1,4 +1,4 @@
-package com.restaurant.app.demo.model.dto;
+package com.restaurant.app.demo.model.dto.orderItem;
 
 import java.math.BigDecimal;
 

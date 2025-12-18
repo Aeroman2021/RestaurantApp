@@ -1,8 +1,8 @@
 package com.restaurant.app.demo.service;
 
 
-import com.restaurant.app.demo.model.dto.OrderRequestDto;
-import com.restaurant.app.demo.model.dto.OrderResponseDto;
+import com.restaurant.app.demo.model.dto.order.OrderRequestDto;
+import com.restaurant.app.demo.model.dto.order.OrderResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
