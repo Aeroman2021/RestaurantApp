@@ -1,3 +1,11 @@
 spring:
   application:
     name: restaurantApp
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/resturant_app
+    username: root
+    password: 123456
+
+server:
+  port: 9090
