@@ -35,6 +35,10 @@ public class Order {
     @OneToMany(mappedBy = "order",fetch = FetchType.LAZY)
     private List<OrderItem> orderItems;
 
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
     @Column(name="created_at")
     private LocalDateTime createdAt;
 

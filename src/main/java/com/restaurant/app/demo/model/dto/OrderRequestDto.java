@@ -1,0 +1,15 @@
+package com.restaurant.app.demo.model.dto;
+
+import com.restaurant.app.demo.model.entity.OrderItem;
+import com.restaurant.app.demo.model.entity.enums.Status;
+
+import java.util.List;
+
+public record OrderRequestDto(
+        Long userId,
+        Status status,
+        List<OrderItem> orderItemList
+
+) {
+
+}
