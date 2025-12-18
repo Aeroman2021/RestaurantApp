@@ -1,4 +1,4 @@
-package com.restaurant.app.demo.controller;
+package com.restaurant.app.demo.controller.dto;
 
 import java.util.Map;
 

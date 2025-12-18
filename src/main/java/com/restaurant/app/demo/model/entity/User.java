@@ -1,14 +1,12 @@
 package com.restaurant.app.demo.model.entity;
 
-import com.restaurant.app.demo.model.entity.enums.Role;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Table(name = "users")
 @Entity
@@ -34,8 +32,14 @@ public class User {
 
     private String email;
 
-    @Enumerated(EnumType.STRING)
-    private Role role;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name="users_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
 
     @OneToMany(mappedBy = "user",fetch = FetchType.LAZY)
     private List<Order> orders;
@@ -47,7 +51,7 @@ public class User {
     private LocalDateTime createdAt;
 
     public User(Long id, String userName, String password, String firstName, String lastName, String phone,
-                String email, Role role, List<Order> orders, boolean isActive, LocalDateTime createdAt) {
+                String email, List<Order> orders, boolean isActive, LocalDateTime createdAt) {
         this.id = id;
         this.userName = userName;
         this.password = password;
@@ -55,7 +59,6 @@ public class User {
         this.lastName = lastName;
         this.phone = phone;
         this.email = email;
-        this.role = role;
         this.orders = orders;
         this.isActive = isActive;
         this.createdAt = createdAt;
@@ -64,15 +67,21 @@ public class User {
     public User() {
     }
 
-    public User(String userName, String password, String firstName, String lastName, String phone, String email,
-                Role role, List<Order> orders, boolean isActive, LocalDateTime createdAt) {
+    public User(String userName, String password, Set<com.restaurant.app.demo.model.entity.Role> roles) {
+        this.userName = userName;
+        this.password = password;
+        this.roles = roles;
+    }
+
+    public User(String userName, String password, String firstName, String lastName, String phone, String email
+                , List<Order> orders, boolean isActive, LocalDateTime createdAt) {
         this.userName = userName;
         this.password = password;
         this.firstName = firstName;
         this.lastName = lastName;
         this.phone = phone;
         this.email = email;
-        this.role = role;
+
         this.orders = orders;
         this.isActive = isActive;
         this.createdAt = createdAt;
@@ -134,13 +143,6 @@ public class User {
         this.email = email;
     }
 
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
 
     public List<Order> getOrders() {
         return orders;
@@ -164,5 +166,13 @@ public class User {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Set<Role> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
     }
 }

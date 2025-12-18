@@ -6,6 +6,7 @@ import com.restaurant.app.demo.model.dto.order.OrderResponseDto;
 import com.restaurant.app.demo.service.OrderService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,12 +21,14 @@ public class OrderController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('CUSTOMER')")
     public ApiResponse<OrderResponseDto> create(@RequestBody OrderRequestDto orderRequestDto){
         OrderResponseDto result = orderService.create(orderRequestDto);
         return ApiResponse.ok(result,"Order created successfully");
     }
 
     @PutMapping("/{orderId}")
+    @PreAuthorize("hasAnyRole('CUSTOMER','ADMIN')")
     public ApiResponse<OrderResponseDto> update(@PathVariable Long orderId, @RequestBody OrderRequestDto orderRequestDto){
         OrderResponseDto result = orderService.update(orderId,orderRequestDto);
         return ApiResponse.ok(result,"Order created successfully");
@@ -33,18 +36,21 @@ public class OrderController {
 
 
     @GetMapping("/{orderId}")
+    @PreAuthorize("hasRole('CUSTOMER')")
     public ApiResponse<OrderResponseDto> getById(@PathVariable Long orderId){
         OrderResponseDto result = orderService.getById(orderId);
         return ApiResponse.ok(result,"Order fetched successfully");
     }
 
     @DeleteMapping("/{orderId}")
+    @PreAuthorize("hasRole('CUSTOMER')")
     public ApiResponse<OrderResponseDto> deleteById(@PathVariable Long orderId){
         orderService.deleteById(orderId);
         return ApiResponse.ok(null,"Order created successfully");
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('CUSTOMER','ADMIN')")
     public ApiResponse<Page<OrderResponseDto>> getAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size

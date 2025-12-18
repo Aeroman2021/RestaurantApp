@@ -1,5 +1,7 @@
 package com.restaurant.app.demo.controller;
 
+import com.restaurant.app.demo.controller.dto.ErrorResponseDto;
+
 import java.sql.Timestamp;
 
 public record ApiResponse<T>(

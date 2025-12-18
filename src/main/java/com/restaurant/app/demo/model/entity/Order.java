@@ -24,7 +24,9 @@ public class Order {
     @Column(name = "total_price")
     private BigDecimal totalPrice;
 
-    @OneToMany(mappedBy = "order",fetch = FetchType.LAZY,cascade = CascadeType.PERSIST)
+    @OneToMany(mappedBy = "order",
+            cascade = CascadeType.ALL,fetch = FetchType.LAZY,
+            orphanRemoval = true)
     private List<OrderItem> orderItems;
 
     @ManyToOne
