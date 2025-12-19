@@ -7,8 +7,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.stream.Collectors;
-
 @Service
 public class MenuItemServiceImpl implements MenuItemService {
 
@@ -20,10 +18,8 @@ public class MenuItemServiceImpl implements MenuItemService {
 
     @Override
     public Page<MenuItemResponseDto> loadAll(Pageable pageable) {
-        return (Page<MenuItemResponseDto> )menuItemRepository.findAll(pageable)
-                .stream()
+        return menuItemRepository.findAll(pageable)
                 .map(menuItem ->
-                        new MenuItemResponseDto(menuItem.getId(), menuItem.getName(),menuItem.getPrice(), menuItem.isActive()))
-                .collect(Collectors.toList());
+                        new MenuItemResponseDto(menuItem.getId(), menuItem.getName(),menuItem.getPrice(), menuItem.isActive()));
     }
 }

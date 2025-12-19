@@ -3,11 +3,20 @@ package com.restaurant.app.demo.controller;
 
 import com.restaurant.app.demo.model.dto.order.OrderRequestDto;
 import com.restaurant.app.demo.model.dto.order.OrderResponseDto;
+import com.restaurant.app.demo.model.entity.OrderItem;
+import com.restaurant.app.demo.model.entity.User;
+import com.restaurant.app.demo.model.entity.enums.Status;
 import com.restaurant.app.demo.service.OrderService;
+import jakarta.persistence.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -53,9 +62,18 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('CUSTOMER','ADMIN')")
     public ApiResponse<Page<OrderResponseDto>> getAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "ASC") String direction,
+            @RequestParam(defaultValue = "orderNumber") String property
     ){
-        Page<OrderResponseDto> result = orderService.loadAll(PageRequest.of(page, size));
+        Sort.Direction dir = Sort.Direction.fromOptionalString(direction).orElse(Sort.Direction.ASC);
+        List<String> allowedProperties = List.of("orderNumber","totalPrice","createdAt","status");
+
+        if(!allowedProperties.contains(property)){
+            throw new IllegalArgumentException("Invalid sort property");
+        }
+
+        Page<OrderResponseDto> result = orderService.loadAll(PageRequest.of(page, size,dir,property));
         return ApiResponse.ok(result,"Orders fetched successfully");
     }
 
