@@ -88,4 +88,12 @@ public class MenuItem {
     public void setActive(boolean active) {
         isActive = active;
     }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
+    }
 }

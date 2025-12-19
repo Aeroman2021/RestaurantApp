@@ -1,9 +1,13 @@
 package com.restaurant.app.demo.security;
 
+import com.restaurant.app.demo.model.entity.Role;
+import com.restaurant.app.demo.model.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
@@ -37,10 +41,16 @@ public class JwtService {
                 .getBody();
     }
 
-    public String generateToken(String username){
+    public String generateToken(UserDetails userDetails){
         long expirationMs = 1000 * 60 * 60;
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(userDetails.getUsername())
+                .claim(
+                        "roles",
+                        userDetails.getAuthorities().stream()
+                                .map(GrantedAuthority::getAuthority)
+                                .toList()
+                )
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(getSecretKey(), SignatureAlgorithm.HS256)

@@ -4,13 +4,17 @@ package com.restaurant.app.demo.service;
 import com.restaurant.app.demo.model.dto.AuthResponse;
 import com.restaurant.app.demo.model.dto.LoginRequest;
 import com.restaurant.app.demo.model.dto.RegisterRequest;
+import com.restaurant.app.demo.model.dto.UserResponseDto;
 import com.restaurant.app.demo.model.entity.Role;
 import com.restaurant.app.demo.model.entity.User;
 import com.restaurant.app.demo.repository.RoleRepository;
 import com.restaurant.app.demo.repository.UserRepository;
+import com.restaurant.app.demo.security.CustomUserDetailService;
 import com.restaurant.app.demo.security.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -34,9 +38,9 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
-    public void register(RegisterRequest registerRequest){
-        Role roleUser = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new RuntimeException("ROLE_USER not found."));
+    public UserResponseDto register(RegisterRequest registerRequest){
+        Role roleUser = roleRepository.findByName("ROLE_CUSTOMER")
+                .orElseThrow(() -> new RuntimeException("ROLE_CUSTOMER not found."));
         User user = new User();
         user.setFirstName(registerRequest.firstName());
         user.setLastName(registerRequest.lastName());
@@ -46,15 +50,22 @@ public class AuthService {
         Optional.ofNullable(registerRequest.phone()).ifPresent(user::setPhone);
         user.setRoles(Set.of(roleUser));
         user.setActive(true);
-        userRepository.save(user);
+        User result = userRepository.save(user);
+        return new UserResponseDto(result.getId(), result.getFirstName(), result.getLastName(), result.getUserName());
     }
 
     public AuthResponse login(LoginRequest loginRequest){
-        manager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.userName(),loginRequest.password())
+        Authentication authentication = manager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginRequest.userName(),
+                        loginRequest.password()
+                )
         );
 
-        String token = jwtService.generateToken(loginRequest.userName());
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+
+        String token = jwtService.generateToken(userDetails);
+
         return new AuthResponse(token);
     }
 }

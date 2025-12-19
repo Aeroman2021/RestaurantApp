@@ -5,6 +5,7 @@ package com.restaurant.app.demo.controller;
 import com.restaurant.app.demo.model.dto.AuthResponse;
 import com.restaurant.app.demo.model.dto.LoginRequest;
 import com.restaurant.app.demo.model.dto.RegisterRequest;
+import com.restaurant.app.demo.model.dto.UserResponseDto;
 import com.restaurant.app.demo.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
@@ -26,8 +27,8 @@ public class AuthController {
 
     @PostMapping("/register")
     public ApiResponse<?> register(@Valid  @RequestBody RegisterRequest request){
-        authService.register(request);
-        return ApiResponse.ok(null,"user registered successfully");
+        UserResponseDto result = authService.register(request);
+        return ApiResponse.ok(result,"user registered successfully");
     }
 
     @PostMapping("/login")
