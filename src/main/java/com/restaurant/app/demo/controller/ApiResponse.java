@@ -1,14 +1,12 @@
 package com.restaurant.app.demo.controller;
 
-import com.restaurant.app.demo.controller.dto.ErrorResponseDto;
-
 import java.sql.Timestamp;
 
 public record ApiResponse<T>(
         boolean success,
         T data,
         String message,
-        ErrorResponseDto error,
+        Object error,
         Timestamp date
 ) {
 
@@ -16,7 +14,7 @@ public record ApiResponse<T>(
         return new ApiResponse<>(true,t,message,null,new Timestamp(System.currentTimeMillis()));
     }
 
-    public  static ApiResponse<?> error(String message,ErrorResponseDto error){
+    public  static ApiResponse<?> error(String message,Object error){
         return new ApiResponse<>(false,null,message,error,new Timestamp(System.currentTimeMillis()));
     }
 
