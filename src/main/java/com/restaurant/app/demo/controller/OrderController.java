@@ -73,7 +73,7 @@ public class OrderController {
             throw new IllegalArgumentException("Invalid sort property");
         }
 
-        Page<OrderResponseDto> result = orderService.loadAll(PageRequest.of(page, size,dir,property));
+        Page<OrderResponseDto> result = orderService.getAll(PageRequest.of(page, size,dir,property));
         return ApiResponse.ok(result,"Orders fetched successfully");
     }
 

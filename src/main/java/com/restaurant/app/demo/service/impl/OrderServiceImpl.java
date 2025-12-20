@@ -149,4 +149,13 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.delete(order);
     }
 
+    @Override
+    public Page<OrderResponseDto> getAll(Pageable pageable) {
+        return orderRepository.getAll(pageable)
+                .map(o->new OrderResponseDto(
+                        o.getId(),
+                        o.getStatus(),
+                        o.getOrderNumber()
+                ));
+    }
 }

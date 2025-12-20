@@ -5,6 +5,6 @@ import com.restaurant.app.demo.model.entity.enums.Status;
 public record OrderResponseDto(
         Long orderId,
         Status orderStatus,
-        String OrderId
+        String orderNumber
 ) {
 }

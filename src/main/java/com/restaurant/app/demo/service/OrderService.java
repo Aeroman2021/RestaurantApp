@@ -12,6 +12,7 @@ public interface OrderService {
     void deleteById(Long orderId);
     OrderResponseDto getById(Long orderId);
     Page<OrderResponseDto> loadAll(Pageable pageable);
+    Page<OrderResponseDto> getAll(Pageable pageable);
 
 
 }
