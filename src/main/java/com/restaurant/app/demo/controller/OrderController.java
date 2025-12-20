@@ -37,9 +37,16 @@ public class OrderController {
     }
 
     @PutMapping("/{orderId}")
-    @PreAuthorize("hasAnyRole('CUSTOMER','ADMIN')")
-    public ApiResponse<OrderResponseDto> update(@PathVariable Long orderId, @RequestBody OrderRequestDto orderRequestDto){
-        OrderResponseDto result = orderService.update(orderId,orderRequestDto);
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ApiResponse<OrderResponseDto> updateOrder(@PathVariable Long orderId, @RequestBody OrderRequestDto orderRequestDto){
+        OrderResponseDto result = orderService.updateOrder(orderRequestDto,orderId);
+        return ApiResponse.ok(result,"Order created successfully");
+    }
+
+    @PutMapping("admin/{orderId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<OrderResponseDto> updateStatus(@PathVariable Long orderId){
+        OrderResponseDto result = orderService.updateStatus(orderId);
         return ApiResponse.ok(result,"Order created successfully");
     }
 
