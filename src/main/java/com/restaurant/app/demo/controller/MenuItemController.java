@@ -3,9 +3,7 @@ package com.restaurant.app.demo.controller;
 
 import com.restaurant.app.demo.model.dto.menuItem.MenuItemResponseDto;
 import com.restaurant.app.demo.service.MenuItemService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,7 +37,12 @@ public class MenuItemController {
             throw new IllegalArgumentException("Invalid sort property");
         }
 
-        Page<MenuItemResponseDto> result = menuItemService.loadAll(PageRequest.of(page, size, dir,property));
-        return ApiResponse.ok(result,"MenuItems Fetched successfully");
+        Pageable pageable = PageRequest.of(page, size, Sort.by(dir, property));
+        List<MenuItemResponseDto> items = menuItemService.loadAll(pageable);
+
+        Long total = menuItemService.countAll();
+
+        Page<MenuItemResponseDto> result = new PageImpl<>(items,pageable,total);
+        return ApiResponse.ok(result,"Menu retched successfully");
     }
 }
