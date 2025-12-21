@@ -3,19 +3,13 @@ package com.restaurant.app.demo.controller;
 
 import com.restaurant.app.demo.model.dto.order.OrderRequestDto;
 import com.restaurant.app.demo.model.dto.order.OrderResponseDto;
-import com.restaurant.app.demo.model.entity.OrderItem;
-import com.restaurant.app.demo.model.entity.User;
-import com.restaurant.app.demo.model.entity.enums.Status;
 import com.restaurant.app.demo.service.OrderService;
-import jakarta.persistence.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -24,15 +18,15 @@ public class OrderController {
 
     private final OrderService orderService;
 
-
     public OrderController(OrderService orderService) {
         this.orderService = orderService;
     }
 
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ApiResponse<OrderResponseDto> create(@RequestBody OrderRequestDto orderRequestDto){
-        OrderResponseDto result = orderService.create(orderRequestDto);
+    public ApiResponse<OrderResponseDto> create(@RequestBody OrderRequestDto orderRequestDto,
+                                                @RequestHeader("Idempotency-Key") String idempotencyKey) throws Exception {
+        OrderResponseDto result = orderService.create(orderRequestDto,idempotencyKey);
         return ApiResponse.ok(result,"Order created successfully");
     }
 
@@ -49,7 +43,6 @@ public class OrderController {
         OrderResponseDto result = orderService.updateStatus(orderId);
         return ApiResponse.ok(result,"Order created successfully");
     }
-
 
     @GetMapping("/{orderId}")
     @PreAuthorize("hasRole('CUSTOMER')")

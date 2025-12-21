@@ -1,5 +1,7 @@
 package com.restaurant.app.demo.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restaurant.app.demo.model.dto.menuItem.MenuResponseDto;
 import com.restaurant.app.demo.model.dto.order.OrderRequestDto;
 import com.restaurant.app.demo.model.dto.order.OrderResponseDto;
@@ -15,12 +17,14 @@ import com.restaurant.app.demo.repository.UserRepository;
 import com.restaurant.app.demo.service.OrderService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -33,12 +37,18 @@ public class OrderServiceImpl implements OrderService {
     private final UserRepository userRepository;
     private final MenuItemRepository menuItemRepository;
     private final RoleRepository roleRepository;
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
-    public OrderServiceImpl(OrderRepository orderRepository,UserRepository userRepository,MenuItemRepository menuItemRepository,RoleRepository roleRepository) {
+    public OrderServiceImpl(OrderRepository orderRepository,UserRepository userRepository,
+                            MenuItemRepository menuItemRepository,RoleRepository roleRepository,
+                            StringRedisTemplate redisTemplate,ObjectMapper objectMapper) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.menuItemRepository = menuItemRepository;
         this.roleRepository = roleRepository;
+        this.redisTemplate= redisTemplate;
+        this.objectMapper=objectMapper;
     }
 
     private User findUserById(Long uerId){
@@ -48,26 +58,51 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponseDto create(OrderRequestDto orderRequestDto) {
+    public OrderResponseDto create(OrderRequestDto orderRequestDto,String idempotencyKey) throws Exception {
 
-        Order order = new Order();
-        List<OrderItem> orderItems = setOrderItemsToAnOrder(orderRequestDto, order);
-        order.setOrderNumber(UUID.randomUUID().toString());
-        order.setOrderItems(orderItems);
-        order.setStatus(Status.CREATED);
-        order.setUser(findUserById(orderRequestDto.userId()));
-        order.setCreatedAt(LocalDateTime.now());
+        String redisKey = "order created: " + orderRequestDto.userId() + " : " + idempotencyKey;
+        String cached = redisTemplate.opsForValue().get(redisKey);
 
-        BigDecimal totalPrice = orderRequestDto.orderItemList().stream()
-                .map(req->{
-                    MenuItem menuItem = menuItemRepository.findById(req.menuItem()).orElseThrow(
-                            ()->new RuntimeException("Menu Not Found"));
-                    return menuItemRepository.findById(menuItem.getId()).get().getPrice().multiply(BigDecimal.valueOf(req.quantity()));
-                 }).reduce(BigDecimal.ZERO,BigDecimal::add);
+        if(cached != null && !cached.equals("PROCESSING")){
+            return showOrderDetails(Long.valueOf(cached));
+        }
 
-        order.setTotalPrice(totalPrice);
-        Order result = orderRepository.save(order);
-        return showOrderDetails(result.getId());
+        Boolean locked = redisTemplate.opsForValue().setIfAbsent(redisKey, "PROCESSING", Duration.ofMinutes(5));
+
+        if (Boolean.FALSE.equals(locked)) {
+            throw new IllegalStateException("Order is being processed");
+        }
+
+        try{
+            Order order = new Order();
+            List<OrderItem> orderItems = setOrderItemsToAnOrder(orderRequestDto, order);
+            order.setOrderNumber(UUID.randomUUID().toString());
+            order.setOrderItems(orderItems);
+            order.setStatus(Status.CREATED);
+            order.setUser(findUserById(orderRequestDto.userId()));
+            order.setCreatedAt(LocalDateTime.now());
+
+            BigDecimal totalPrice = orderRequestDto.orderItemList().stream()
+                    .map(req->{
+                        MenuItem menuItem = menuItemRepository.findById(req.menuItem()).orElseThrow(
+                                ()->new RuntimeException("Menu Not Found"));
+                        return menuItemRepository.findById(menuItem.getId()).get().getPrice().multiply(BigDecimal.valueOf(req.quantity()));
+                    }).reduce(BigDecimal.ZERO,BigDecimal::add);
+
+            order.setTotalPrice(totalPrice);
+            Order result = orderRepository.save(order);
+
+            redisTemplate.opsForValue().set(
+                    redisKey,
+                    result.getId().toString(),
+                    Duration.ofHours(24)
+            );
+            return showOrderDetails(result.getId());
+        }catch (Exception e){
+            redisTemplate.delete(redisKey);
+            throw e;
+        }
+
     }
 
     private List<OrderItem> setOrderItemsToAnOrder(OrderRequestDto orderRequestDto, Order order) {

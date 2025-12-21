@@ -7,7 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface OrderService {
-    OrderResponseDto create(OrderRequestDto orderRequestDto);
+    OrderResponseDto create(OrderRequestDto orderRequestDto,String idempotencyKey) throws Exception;
     OrderResponseDto updateOrder(OrderRequestDto orderRequestDto,Long orderId);
     OrderResponseDto updateStatus(Long orderId);
     void deleteById(Long orderId);
