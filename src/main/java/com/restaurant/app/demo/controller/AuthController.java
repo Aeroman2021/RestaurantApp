@@ -2,11 +2,11 @@ package com.restaurant.app.demo.controller;
 
 
 
-import com.restaurant.app.demo.model.dto.AuthResponse;
-import com.restaurant.app.demo.model.dto.LoginRequest;
-import com.restaurant.app.demo.model.dto.RegisterRequest;
-import com.restaurant.app.demo.model.dto.UserResponseDto;
-import com.restaurant.app.demo.service.AuthService;
+import com.restaurant.app.demo.model.dto.user.AuthResponse;
+import com.restaurant.app.demo.model.dto.user.LoginRequest;
+import com.restaurant.app.demo.model.dto.user.RegisterRequest;
+import com.restaurant.app.demo.model.dto.user.UserResponseDto;
+import com.restaurant.app.demo.service.impl.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;

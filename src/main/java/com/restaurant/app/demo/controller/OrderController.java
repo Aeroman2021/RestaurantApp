@@ -1,8 +1,10 @@
 package com.restaurant.app.demo.controller;
 
 
+import com.restaurant.app.demo.model.dto.cart.CartRequestDto;
 import com.restaurant.app.demo.model.dto.order.OrderRequestDto;
 import com.restaurant.app.demo.model.dto.order.OrderResponseDto;
+import com.restaurant.app.demo.model.entity.Order;
 import com.restaurant.app.demo.service.OrderService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,9 +26,16 @@ public class OrderController {
 
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ApiResponse<OrderResponseDto> create(@RequestBody OrderRequestDto orderRequestDto,
+    public ApiResponse<Order> upsertCart(@RequestBody CartRequestDto cartRequestDto) throws Exception {
+        Order cart = orderService.upsertCart(cartRequestDto);
+        return ApiResponse.ok(cart,"Cart created successfully");
+    }
+
+    @PutMapping("/checkOut/{id}")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ApiResponse<OrderResponseDto> checkOut(@PathVariable Long id,
                                                 @RequestHeader("Idempotency-Key") String idempotencyKey) throws Exception {
-        OrderResponseDto result = orderService.create(orderRequestDto,idempotencyKey);
+        OrderResponseDto result = orderService.checkOut(id,idempotencyKey);
         return ApiResponse.ok(result,"Order created successfully");
     }
 

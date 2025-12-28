@@ -2,14 +2,16 @@ package com.restaurant.app.demo.order;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.restaurant.app.demo.controller.ApiResponse;
-import com.restaurant.app.demo.model.dto.UserResponseDto;
-import com.restaurant.app.demo.model.dto.order.OrderRequestDto;
+import com.restaurant.app.demo.model.dto.cart.CartRequestDto;
 import com.restaurant.app.demo.model.dto.order.OrderResponseDto;
+import com.restaurant.app.demo.model.dto.orderItem.OrderItemRequestDto;
+import com.restaurant.app.demo.model.dto.user.UserResponseDto;
+import com.restaurant.app.demo.model.entity.Order;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,21 +22,44 @@ public class OrderControllerTest extends BaseIntegrationTest {
 
 
     @Test
-    void create_order_successfully() throws Exception {
-
+    void upsertCart_successfully() throws Exception{
         UserResponseDto user = createUser();
-        String token = generateToken(user);
-
-    // ORDER REQUEST
-        OrderRequestDto orderRequestDto = generateOrderItem(user);
+        List<OrderItemRequestDto> orderItemRequestDtoList = generateOrderItem(user).orderItemList();
+        CartRequestDto cartRequestDto = new CartRequestDto(user.id(),10L,orderItemRequestDtoList);
 
         String content = mockMvc.perform(
+                MockMvcRequestBuilders
+                        .post("/api/v1/orders")
+                        .header("Authorization",TEST_JWT_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(cartRequestDto))
+
+        ).andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        ApiResponse<Order> response =
+                objectMapper.readValue(
+                        content,
+                        new TypeReference<>() {}
+                );
+        assertThat(response.success()).isTrue();
+        assertThat(response.data()).isNotNull();
+    }
+
+
+
+    @Test
+    void checkout_order_successfully() throws Exception {
+
+        long orderId = 5L;
+        String content = mockMvc.perform(
                         MockMvcRequestBuilders
-                                .post("/api/v1/orders")
-                                .header("Authorization",token)
+                                .put("/api/v1/orders/checkOut/" + orderId)
+                                .header("Authorization",TEST_JWT_TOKEN)
                                 .header("Idempotency-Key", UUID.randomUUID().toString())
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(orderRequestDto))
                 )
                 .andExpect(status().isOk())
                 .andReturn()

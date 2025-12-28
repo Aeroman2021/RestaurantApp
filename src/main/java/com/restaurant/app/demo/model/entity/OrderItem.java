@@ -1,6 +1,9 @@
 package com.restaurant.app.demo.model.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -17,9 +20,8 @@ public class OrderItem {
 
     @ManyToOne
     @JoinColumn(name = "menue_item_id")
+    @JsonIgnore
     private MenuItem menuItem;
-
-
 
     @Column(name = "price_at_order")
     private BigDecimal priceAtOrder;
@@ -27,6 +29,7 @@ public class OrderItem {
 
     @ManyToOne
     @JoinColumn(name = "order_id")
+    @JsonIgnore
     private Order order;
 
     public OrderItem(int quantity, MenuItem menuItem, BigDecimal priceAtOrder, Order order) {

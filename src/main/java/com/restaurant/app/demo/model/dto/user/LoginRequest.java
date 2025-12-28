@@ -1,4 +1,4 @@
-package com.restaurant.app.demo.model.dto;
+package com.restaurant.app.demo.model.dto.user;
 
 import jakarta.validation.constraints.NotBlank;
 

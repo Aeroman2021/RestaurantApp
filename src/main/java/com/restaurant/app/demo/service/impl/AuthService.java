@@ -1,15 +1,14 @@
-package com.restaurant.app.demo.service;
+package com.restaurant.app.demo.service.impl;
 
 
-import com.restaurant.app.demo.model.dto.AuthResponse;
-import com.restaurant.app.demo.model.dto.LoginRequest;
-import com.restaurant.app.demo.model.dto.RegisterRequest;
-import com.restaurant.app.demo.model.dto.UserResponseDto;
+import com.restaurant.app.demo.model.dto.user.AuthResponse;
+import com.restaurant.app.demo.model.dto.user.LoginRequest;
+import com.restaurant.app.demo.model.dto.user.RegisterRequest;
+import com.restaurant.app.demo.model.dto.user.UserResponseDto;
 import com.restaurant.app.demo.model.entity.Role;
 import com.restaurant.app.demo.model.entity.User;
 import com.restaurant.app.demo.repository.RoleRepository;
 import com.restaurant.app.demo.repository.UserRepository;
-import com.restaurant.app.demo.security.CustomUserDetailService;
 import com.restaurant.app.demo.security.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,6 +17,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -50,6 +50,8 @@ public class AuthService {
         Optional.ofNullable(registerRequest.phone()).ifPresent(user::setPhone);
         user.setRoles(Set.of(roleUser));
         user.setActive(true);
+        user.setCustomerLevel(registerRequest.customerLevel());
+        user.setCreatedAt(LocalDateTime.now());
         User result = userRepository.save(user);
         return new UserResponseDto(result.getId(), result.getFirstName(), result.getLastName(), result.getUserName());
     }
@@ -63,7 +65,6 @@ public class AuthService {
         );
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-
         String token = jwtService.generateToken(userDetails);
 
         return new AuthResponse(token);

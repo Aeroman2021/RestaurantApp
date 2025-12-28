@@ -1,10 +1,10 @@
-package com.restaurant.app.demo.model.dto;
+package com.restaurant.app.demo.model.dto.user;
 
-import jakarta.persistence.Column;
+import com.restaurant.app.demo.model.entity.enums.CustomerLevel;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
 
@@ -29,7 +29,9 @@ public record RegisterRequest(
 
         @NotBlank(message = "email should not be blank")
         @Email(message = "email should be valid")
-        String email
+        String email,
 
+        @NotNull(message = "customerLevel should not be blank")
+        CustomerLevel customerLevel
 ) {
 }

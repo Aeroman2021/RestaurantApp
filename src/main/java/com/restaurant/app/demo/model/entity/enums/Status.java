@@ -3,10 +3,27 @@ package com.restaurant.app.demo.model.entity.enums;
 import com.restaurant.app.demo.model.entity.Role;
 
 public enum Status {
+
+    CART{
+        @Override
+        public Status next(Role role) {
+            if(role.getName().equals("ROLE_CUSTOMER")){
+                return CREATED;
+            }
+            throw invalid(role);
+        }
+
+        @Override
+        public Status cancel(Role role) {
+            return CANCELLED;
+        }
+    },
+
+
     CREATED{
         @Override
         public Status next(Role role) {
-            if(role.equals("CUSTOMER") ||role.equals("ADMIN")){
+            if(role.getName().equals("ROLE_CUSTOMER") ||role.getName().equals("ROLE_ADMIN")){
                 return PAID;
             }
             throw invalid(role);
@@ -21,7 +38,7 @@ public enum Status {
     PAID{
         @Override
         public Status next(Role role) {
-            if(role.equals("ADMIN")){
+            if(role.getName().equals("ROLE_ADMIN")){
                 return PREPARING;
             }
             throw invalid(role);
@@ -36,7 +53,7 @@ public enum Status {
     PREPARING{
         @Override
         public Status next(Role role) {
-            if(role.equals("ADMIN")){
+            if(role.getName().equals("ROLE_ADMIN")){
                 return READY;
             }
             throw invalid(role);
@@ -44,7 +61,7 @@ public enum Status {
 
         @Override
         public Status cancel(Role role) {
-            if(role.equals("ADMIN")){
+            if(role.getName().equals("ROLE_ADMIN")){
                 return CANCELLED;
             }
             throw invalid(role);
@@ -54,7 +71,7 @@ public enum Status {
     READY{
         @Override
         public Status next(Role role) {
-            if(role.equals("ADMIN")){
+            if(role.getName().equals("ROLE_ADMIN")){
                 return DELIVERED;
             }
             throw invalid(role);

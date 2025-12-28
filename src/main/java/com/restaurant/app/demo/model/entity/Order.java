@@ -1,10 +1,12 @@
 package com.restaurant.app.demo.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.restaurant.app.demo.model.entity.enums.Status;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Table(name = "orders")
@@ -27,7 +29,7 @@ public class Order {
     @OneToMany(mappedBy = "order",
             cascade = CascadeType.ALL,fetch = FetchType.LAZY,
             orphanRemoval = true)
-    private List<OrderItem> orderItems;
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "user_id")

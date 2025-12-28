@@ -1,5 +1,6 @@
 package com.restaurant.app.demo.model.entity;
 
+import com.restaurant.app.demo.model.entity.enums.CustomerLevel;
 import jakarta.persistence.*;
 
 
@@ -32,6 +33,11 @@ public class User {
 
     private String email;
 
+    @Column(name = "customer_level")
+    private CustomerLevel customerLevel;
+
+    @Column(name = "total_score")
+    private int totalScore;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -174,5 +180,21 @@ public class User {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
+    }
+
+    public CustomerLevel getCustomerLevel() {
+        return customerLevel;
+    }
+
+    public void setCustomerLevel(CustomerLevel customerLevel) {
+        this.customerLevel = customerLevel;
+    }
+
+    public int getTotalScore() {
+        return totalScore;
+    }
+
+    public void setTotalScore(int totalScore) {
+        this.totalScore = totalScore;
     }
 }

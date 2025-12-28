@@ -2,6 +2,7 @@ package com.restaurant.app.demo.repository;
 
 import com.restaurant.app.demo.model.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -9,5 +10,6 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User,Long> {
 
+    @Query("select u  from User u  where u.userName = :username")
     Optional<User> findByUserName(String username);
 }
