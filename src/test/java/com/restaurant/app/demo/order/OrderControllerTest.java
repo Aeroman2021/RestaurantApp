@@ -6,7 +6,6 @@ import com.restaurant.app.demo.model.dto.cart.CartRequestDto;
 import com.restaurant.app.demo.model.dto.order.OrderResponseDto;
 import com.restaurant.app.demo.model.dto.orderItem.OrderItemRequestDto;
 import com.restaurant.app.demo.model.dto.user.UserResponseDto;
-import com.restaurant.app.demo.model.entity.Order;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;

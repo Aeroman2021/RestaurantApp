@@ -1,11 +1,8 @@
 package com.restaurant.app.demo.model.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -31,6 +28,12 @@ public class MenuItem {
 
     @Column(name = "is_active")
     private boolean isActive;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "restaurant_id", nullable = false)
+    @JsonIgnore
+    private Restaurant restaurant;
 
     public MenuItem(Long id, String name, BigDecimal price, List<OrderItem> orderItems, boolean isActive) {
         this.id = id;
@@ -96,5 +99,13 @@ public class MenuItem {
 
     public void setCategory(Category category) {
         this.category = category;
+    }
+
+    public Restaurant getRestaurant() {
+        return restaurant;
+    }
+
+    public void setRestaurant(Restaurant restaurant) {
+        this.restaurant = restaurant;
     }
 }

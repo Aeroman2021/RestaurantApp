@@ -1,6 +1,5 @@
 package com.restaurant.app.demo.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restaurant.app.demo.model.dto.cart.CartRequestDto;
 import com.restaurant.app.demo.model.dto.menuItem.MenuResponseDto;
 import com.restaurant.app.demo.model.dto.order.OrderRequestDto;
@@ -18,7 +17,6 @@ import com.restaurant.app.demo.repository.RoleRepository;
 import com.restaurant.app.demo.repository.UserRepository;
 import com.restaurant.app.demo.service.OrderService;
 import com.restaurant.app.demo.service.PricingStrategy;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;

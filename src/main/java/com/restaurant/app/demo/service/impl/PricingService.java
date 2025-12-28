@@ -1,6 +1,5 @@
 package com.restaurant.app.demo.service.impl;
 
-import com.restaurant.app.demo.model.dto.order.OrderRequestDto;
 import com.restaurant.app.demo.model.entity.Order;
 import com.restaurant.app.demo.model.entity.User;
 import com.restaurant.app.demo.service.PricingStrategy;

@@ -3,7 +3,6 @@ package com.restaurant.app.demo.service.impl.scoreStrategyImpl;
 import com.restaurant.app.demo.model.entity.MenuItem;
 import com.restaurant.app.demo.model.entity.Order;
 import com.restaurant.app.demo.repository.MenuItemRepository;
-import com.restaurant.app.demo.service.OrderService;
 import com.restaurant.app.demo.service.ScoreStrategy;
 import org.springframework.stereotype.Component;
 
