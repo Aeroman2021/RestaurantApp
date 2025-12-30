@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 
 public interface OrderService {
     OrderResponseDto checkOut(Long orderId,String idempotencyKey)throws Exception;
-    Order upsertCart(CartRequestDto cartRequestDto);
+    OrderResponseDto upsertCart(CartRequestDto cartRequestDto,String idempotencyKey);
     OrderResponseDto updateOrder(OrderRequestDto orderRequestDto,Long orderId);
     OrderResponseDto updateStatus(Long orderId);
     void deleteById(Long orderId);

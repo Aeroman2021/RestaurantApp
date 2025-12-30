@@ -7,6 +7,7 @@ import com.restaurant.app.demo.model.entity.enums.Status;
 import java.util.List;
 
 public record OrderRequestDto(
+        Long restaurantId,
         Long userId,
         Status status,
         List<OrderItemRequestDto> orderItemList

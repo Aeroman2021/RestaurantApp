@@ -3,14 +3,20 @@ package com.restaurant.app.demo.model.entity;
 import com.restaurant.app.demo.model.entity.enums.ScoreReason;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "customer_score_histories")
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class CustomerScoreHistory {
 
     @Id
@@ -39,63 +45,10 @@ public class CustomerScoreHistory {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    public CustomerScoreHistory(User user, Order order, Integer score,
-                                ScoreReason reason) {
+    public CustomerScoreHistory(User user, Order order, Integer score, ScoreReason reason) {
         this.user = user;
         this.order = order;
         this.score = score;
         this.reason = reason;
-    }
-
-    public CustomerScoreHistory() {
-
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public ScoreReason getReason() {
-        return reason;
-    }
-
-    public void setReason(ScoreReason reason) {
-        this.reason = reason;
-    }
-
-    public Integer getScore() {
-        return score;
-    }
-
-    public void setScore(Integer score) {
-        this.score = score;
-    }
-
-    public Order getOrder() {
-        return order;
-    }
-
-    public void setOrder(Order order) {
-        this.order = order;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
     }
 }

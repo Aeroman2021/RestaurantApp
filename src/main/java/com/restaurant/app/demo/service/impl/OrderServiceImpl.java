@@ -5,16 +5,10 @@ import com.restaurant.app.demo.model.dto.menuItem.MenuResponseDto;
 import com.restaurant.app.demo.model.dto.order.OrderRequestDto;
 import com.restaurant.app.demo.model.dto.order.OrderResponseDto;
 import com.restaurant.app.demo.model.dto.orderItem.OrderItemRequestDto;
-import com.restaurant.app.demo.model.entity.MenuItem;
-import com.restaurant.app.demo.model.entity.Order;
-import com.restaurant.app.demo.model.entity.OrderItem;
-import com.restaurant.app.demo.model.entity.User;
+import com.restaurant.app.demo.model.entity.*;
 import com.restaurant.app.demo.model.entity.enums.CustomerLevel;
 import com.restaurant.app.demo.model.entity.enums.Status;
-import com.restaurant.app.demo.repository.MenuItemRepository;
-import com.restaurant.app.demo.repository.OrderRepository;
-import com.restaurant.app.demo.repository.RoleRepository;
-import com.restaurant.app.demo.repository.UserRepository;
+import com.restaurant.app.demo.repository.*;
 import com.restaurant.app.demo.service.OrderService;
 import com.restaurant.app.demo.service.PricingStrategy;
 import org.slf4j.Logger;
@@ -30,10 +24,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -49,11 +41,12 @@ public class OrderServiceImpl implements OrderService {
     private final CustomerLevelEvaluator customerLevelEvaluator;
     private final PricingStrategyFactory pricingStrategyFactory;
     private final ScoreService scoreService;
+    private final RestaurantRepository restaurantRepository;
 
     public OrderServiceImpl(OrderRepository orderRepository,UserRepository userRepository,
                             MenuItemRepository menuItemRepository,RoleRepository roleRepository,
                             StringRedisTemplate redisTemplate, CustomerLevelEvaluator customerLevelEvaluator,
-                            PricingStrategyFactory pricingStrategyFactory,
+                            PricingStrategyFactory pricingStrategyFactory,RestaurantRepository restaurantRepository,
     ScoreService scoreService ) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
@@ -63,21 +56,65 @@ public class OrderServiceImpl implements OrderService {
         this.customerLevelEvaluator = customerLevelEvaluator;
         this.pricingStrategyFactory = pricingStrategyFactory;
         this.scoreService= scoreService;
+        this.restaurantRepository=restaurantRepository;
     }
 
 
-    public Order upsertCart(CartRequestDto cartRequestDto){
-        User user = userRepository.findById(cartRequestDto.userId()).orElseThrow(()->new RuntimeException("User not found"));
+    public OrderResponseDto upsertCart(CartRequestDto cartRequestDto,String idempotencyKey){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userName = auth.getName();
+        User user = userRepository.findByUserName(userName)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Optional<Order> optionalCart = orderRepository.findByUserAndStatus(user, Status.CART);
-        Order cart = optionalCart.orElseGet(()->createCartForUser(user));
+        String redisKey = "order created: " + user.getId() + " : " + idempotencyKey;
+        String cached = redisTemplate.opsForValue().get(redisKey);
 
-        List<OrderItem> orderItems = setOrderItemsToAnOrderByorderItemList(cartRequestDto.orderItemList(), cart);
-        cart.setOrderItems(orderItems);
-        cart.setTotalPrice(calculateFinalPrice(cart));
-        cart.setCreatedAt(LocalDateTime.now());
+        if(cached != null && !cached.equals("PROCESSING")){
+            return showOrderDetails(Long.valueOf(cached));
+        }
 
-        return orderRepository.save(cart);
+        Boolean locked = redisTemplate.opsForValue().setIfAbsent(redisKey, "PROCESSING", Duration.ofMinutes(5));
+
+        if (Boolean.FALSE.equals(locked))
+            throw new IllegalStateException("Order is being processed");
+
+        try{
+            Restaurant restaurant=restaurantRepository.findById(cartRequestDto.restaurantId())
+                    .orElseThrow(()->new RuntimeException("Restaurant not found"));
+
+            Order cart = orderRepository.findByUserAndStatus(user, Status.CART)
+                    .orElseGet(() -> createCartForUser(user));
+
+            if (cart.getRestaurant() != null &&
+                    !cart.getRestaurant().getId().equals(restaurant.getId())) {
+                throw new IllegalStateException("Cart already belongs to another restaurant");
+            }
+
+            Set<Long> menuItemSet = cartRequestDto.orderItemList()
+                    .stream()
+                    .map(OrderItemRequestDto::menuItem)
+                    .collect(Collectors.toSet());
+            long foundMenuCount = menuItemRepository.countByIdsAndRestaurantId(menuItemSet, restaurant.getId());
+            if(foundMenuCount != menuItemSet.size())
+                throw new RuntimeException("order item does not exist in the restaurant menu.");
+
+            List<OrderItem> orderItems = setOrderItemsToAnOrderByorderItemList(cartRequestDto.orderItemList(), cart);
+            cart.setOrderItems(orderItems);
+            BigDecimal finalPrice = calculateFinalPrice(cart);
+            cart.setTotalPrice(finalPrice);
+            cart.setRestaurant(restaurant);
+
+            Order savedCart = orderRepository.save(cart);
+            redisTemplate.opsForValue().set(
+                    redisKey,
+                    savedCart.getId().toString(),
+                    Duration.ofMinutes(10)
+            );
+            return showOrderDetails(savedCart.getId());
+        }catch (Exception e){
+            redisTemplate.delete(redisKey);
+            throw e;
+        }
     }
 
     Order createCartForUser(User user){

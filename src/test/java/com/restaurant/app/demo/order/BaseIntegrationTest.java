@@ -7,9 +7,11 @@ import com.restaurant.app.demo.model.dto.user.RegisterRequest;
 import com.restaurant.app.demo.model.dto.user.UserResponseDto;
 import com.restaurant.app.demo.model.entity.Category;
 import com.restaurant.app.demo.model.entity.MenuItem;
+import com.restaurant.app.demo.model.entity.Restaurant;
 import com.restaurant.app.demo.model.entity.enums.CustomerLevel;
 import com.restaurant.app.demo.model.entity.enums.Status;
 import com.restaurant.app.demo.repository.MenuItemRepository;
+import com.restaurant.app.demo.repository.RestaurantRepository;
 import com.restaurant.app.demo.repository.RoleRepository;
 import com.restaurant.app.demo.repository.UserRepository;
 import com.restaurant.app.demo.security.CustomUserDetailService;
@@ -25,7 +27,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -60,17 +64,20 @@ public abstract class BaseIntegrationTest {
     protected AuthService authService;
 
     @Autowired
+    protected RestaurantRepository restaurantRepository;
+
+    @Autowired
     private CustomUserDetailService customUserDetailService;
 
-    protected static final String TEST_JWT_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJBZXJvbWFuMjAyNSIsInJvbGVzIjpbIlJPTEVfQ1VTVE9NRVIiXSwiaWF0IjoxNzY2OTA5NDc0LCJleHAiOjE3NjY5MTMwNzR9.hvnQexWVYWZVqBHXNbdQ1x6r8XOGTV_hwzxpLbFWipM";
+    protected static final String TEST_JWT_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJBZXJvbWFuMjAyNSIsInJvbGVzIjpbIlJPTEVfQ1VTVE9NRVIiXSwiaWF0IjoxNzY3MDg5ODc5LCJleHAiOjE3NjcwOTM0Nzl9.jeqmQuuhVF3zwYUVLnKDMQlmt57h-5RRXwqMPDYN5DU";
 
     protected UserResponseDto createUser() {
         RegisterRequest registerRequest =
                 new RegisterRequest(
-                        "Ronin2025",
+                        "Lamer2025",
                         "jdkncjdsnc",
-                        "Sahand",
-                        "Borazjani",
+                        "Mohsen",
+                        "Malakouti",
                         "09371893687",
                         "malakoutiMohsen.aero@gmail.com",
                         CustomerLevel.REGULAR);
@@ -78,11 +85,23 @@ public abstract class BaseIntegrationTest {
     }
 
     protected String generateToken(UserResponseDto UserResponseDto) {
+
         UserDetails userDetails = customUserDetailService.loadUserByUsername(UserResponseDto.username());
         return jwtService.generateToken(userDetails);
     }
 
     protected OrderRequestDto generateOrderItem(UserResponseDto userResponseDto){
+
+        Restaurant restaurant = new Restaurant();
+        restaurant.setIsActive(true);
+        restaurant.setAddressText("جردن، بلوار صبا، پلاک 19");
+        restaurant.setCreatedAt(LocalDateTime.now());
+        restaurant.setLat(new BigDecimal("35.7943778"));
+        restaurant.setLng(new BigDecimal("51.4236973"));
+        restaurant.setName("چاپ چاپ");
+        restaurant.setPhone("02175171");
+        Restaurant savedRestaurant = restaurantRepository.save(restaurant);
+
         Category fastFood = new Category();
         fastFood.setName("fastFood");
         categoryService.create(fastFood);
@@ -91,18 +110,25 @@ public abstract class BaseIntegrationTest {
         pizza.setName("Pizza");
         pizza.setPrice(new BigDecimal("100"));
         pizza.setCategory(fastFood);
+        pizza.setRestaurant(savedRestaurant);
+        pizza.setActive(true);
         MenuItem savedPizza = menuItemRepository.save(pizza);
-        OrderItemRequestDto orderItemRequestDto = new OrderItemRequestDto(savedPizza.getId(),2);
 
         MenuItem burger = new MenuItem();
         burger.setName("Burger");
         burger.setPrice(new BigDecimal("200"));
         burger.setCategory(fastFood);
+        burger.setRestaurant(savedRestaurant);
+        burger.setActive(true);
         MenuItem savedBurger = menuItemRepository.save(burger);
+
+        OrderItemRequestDto orderItemRequestDto = new OrderItemRequestDto(savedPizza.getId(),2);
         OrderItemRequestDto orderItemRequestDto2 = new OrderItemRequestDto(savedBurger.getId(),3);
 
-        return new OrderRequestDto(userResponseDto.id(), Status.CREATED,List.of(orderItemRequestDto, orderItemRequestDto2));
+        Set<MenuItem> menuItems = Set.of(savedPizza, savedBurger);
+        restaurant.setMenueItems(menuItems);
 
+        return new OrderRequestDto(savedRestaurant.getId(),userResponseDto.id(), Status.CREATED,List.of(orderItemRequestDto, orderItemRequestDto2));
     }
 
 }

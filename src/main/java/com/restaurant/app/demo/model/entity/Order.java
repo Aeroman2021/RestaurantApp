@@ -1,16 +1,23 @@
 package com.restaurant.app.demo.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.restaurant.app.demo.model.entity.enums.FulfillmentType;
 import com.restaurant.app.demo.model.entity.enums.Status;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,7 +31,10 @@ import java.util.List;
 }, uniqueConstraints = {
         @UniqueConstraint(name = "order_number", columnNames = {"order_number"})
 })
+@EntityListeners(AuditingEntityListener.class)
+@Getter @Setter @AllArgsConstructor @NoArgsConstructor
 public class Order {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -35,11 +45,10 @@ public class Order {
     private User user;
 
     @Size(max = 50)
-    @NotNull
-    @Column(name = "order_number", nullable = false, length = 50)
+    @Column(name = "order_number", length = 50)
     private String orderNumber;
 
-    @OneToMany(mappedBy = "menuItem",fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "order",fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     private List<OrderItem> orderItems;
 
     @Lob
@@ -57,15 +66,10 @@ public class Order {
     @JsonIgnore
     private Restaurant restaurant;
 
-    @NotNull
-    @ColumnDefault("CURRENT_TIMESTAMP")
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
     @ColumnDefault("'PICKUP'")
-    @Lob
     @Column(name = "fulfillment_type")
-    private String fulfillmentType;
+    @Enumerated(EnumType.STRING)
+    private FulfillmentType fulfillmentType;
 
     @ColumnDefault("0.00")
     @Column(name = "delivery_fee", precision = 10, scale = 2)
@@ -85,141 +89,23 @@ public class Order {
     @Column(name = "delivery_lng", precision = 10, scale = 7)
     private BigDecimal deliveryLng;
 
-    public Order() {
-    }
+    @CreatedDate
+    @Column(name = "created_at",nullable = false,updatable = false)
+    private LocalDateTime createdAt;
 
-    public Order(Long id, User user, String orderNumber, List<OrderItem> orderItems, Status status, BigDecimal totalPrice,
-                 Restaurant restaurant, LocalDateTime createdAt, String fulfillmentType, BigDecimal deliveryFee,
-                 BigDecimal distanceKm, String deliveryAddressText, BigDecimal deliveryLat, BigDecimal deliveryLng) {
-        this.id = id;
-        this.user = user;
-        this.orderNumber = orderNumber;
-        this.orderItems = orderItems;
-        this.status = status;
-        this.totalPrice = totalPrice;
-        this.restaurant = restaurant;
-        this.createdAt = createdAt;
-        this.fulfillmentType = fulfillmentType;
-        this.deliveryFee = deliveryFee;
-        this.distanceKm = distanceKm;
-        this.deliveryAddressText = deliveryAddressText;
-        this.deliveryLat = deliveryLat;
-        this.deliveryLng = deliveryLng;
-    }
+    @LastModifiedDate
+    @Column(name = "updated_at",nullable = false)
+    private LocalDateTime updatedAt;
 
-    public Long getId() {
-        return id;
-    }
+    @Column(name = "checked_out_at")
+    private LocalDateTime checkedOutAt;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    @CreatedBy
+    @Column(name = "created_by",updatable = false)
+    private String createdBy;
 
-    public User getUser() {
-        return user;
-    }
+    @LastModifiedBy
+    @Column(name = "updated_by")
+    private String updatedBy;
 
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public @Size(max = 50) @NotNull String getOrderNumber() {
-        return orderNumber;
-    }
-
-    public void setOrderNumber(@Size(max = 50) @NotNull String orderNumber) {
-        this.orderNumber = orderNumber;
-    }
-
-
-
-    public @NotNull BigDecimal getTotalPrice() {
-        return totalPrice;
-    }
-
-    public void setTotalPrice(@NotNull BigDecimal totalPrice) {
-        this.totalPrice = totalPrice;
-    }
-
-    public @NotNull Restaurant getRestaurant() {
-        return restaurant;
-    }
-
-    public void setRestaurant(@NotNull Restaurant restaurant) {
-        this.restaurant = restaurant;
-    }
-
-
-
-    public String getFulfillmentType() {
-        return fulfillmentType;
-    }
-
-    public void setFulfillmentType(String fulfillmentType) {
-        this.fulfillmentType = fulfillmentType;
-    }
-
-    public BigDecimal getDeliveryFee() {
-        return deliveryFee;
-    }
-
-    public void setDeliveryFee(BigDecimal deliveryFee) {
-        this.deliveryFee = deliveryFee;
-    }
-
-    public BigDecimal getDistanceKm() {
-        return distanceKm;
-    }
-
-    public void setDistanceKm(BigDecimal distanceKm) {
-        this.distanceKm = distanceKm;
-    }
-
-    public @Size(max = 500) String getDeliveryAddressText() {
-        return deliveryAddressText;
-    }
-
-    public void setDeliveryAddressText(@Size(max = 500) String deliveryAddressText) {
-        this.deliveryAddressText = deliveryAddressText;
-    }
-
-    public BigDecimal getDeliveryLat() {
-        return deliveryLat;
-    }
-
-    public void setDeliveryLat(BigDecimal deliveryLat) {
-        this.deliveryLat = deliveryLat;
-    }
-
-    public BigDecimal getDeliveryLng() {
-        return deliveryLng;
-    }
-
-    public void setDeliveryLng(BigDecimal deliveryLng) {
-        this.deliveryLng = deliveryLng;
-    }
-
-    public List<OrderItem> getOrderItems() {
-        return orderItems;
-    }
-
-    public void setOrderItems(List<OrderItem> orderItems) {
-        this.orderItems = orderItems;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public void setStatus(Status status) {
-        this.status = status;
-    }
-
-    public @NotNull LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(@NotNull LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 }

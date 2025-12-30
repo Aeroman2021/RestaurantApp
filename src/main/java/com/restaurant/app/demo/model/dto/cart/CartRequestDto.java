@@ -7,6 +7,7 @@ import java.util.List;
 public record CartRequestDto(
         Long userId,
         Long orderId,
+        Long restaurantId,
         List<OrderItemRequestDto> orderItemList
 ) {
 }

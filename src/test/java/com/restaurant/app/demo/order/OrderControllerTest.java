@@ -3,10 +3,10 @@ package com.restaurant.app.demo.order;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.restaurant.app.demo.controller.ApiResponse;
 import com.restaurant.app.demo.model.dto.cart.CartRequestDto;
+import com.restaurant.app.demo.model.dto.order.OrderRequestDto;
 import com.restaurant.app.demo.model.dto.order.OrderResponseDto;
 import com.restaurant.app.demo.model.dto.orderItem.OrderItemRequestDto;
 import com.restaurant.app.demo.model.dto.user.UserResponseDto;
-import com.restaurant.app.demo.model.entity.Order;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -24,13 +24,19 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @Test
     void upsertCart_successfully() throws Exception{
         UserResponseDto user = createUser();
-        List<OrderItemRequestDto> orderItemRequestDtoList = generateOrderItem(user).orderItemList();
-        CartRequestDto cartRequestDto = new CartRequestDto(user.id(),10L,orderItemRequestDtoList);
+
+        OrderRequestDto orderRequestDto = generateOrderItem(user);
+
+        CartRequestDto cartRequestDto = new CartRequestDto(user.id(),
+                10L,
+                orderRequestDto.restaurantId(),
+                orderRequestDto.orderItemList());
 
         String content = mockMvc.perform(
                 MockMvcRequestBuilders
                         .post("/api/v1/orders")
                         .header("Authorization",TEST_JWT_TOKEN)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(cartRequestDto))
 
@@ -39,7 +45,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
                 .getResponse()
                 .getContentAsString();
 
-        ApiResponse<Order> response =
+        ApiResponse<OrderResponseDto> response =
                 objectMapper.readValue(
                         content,
                         new TypeReference<>() {}
