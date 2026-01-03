@@ -10,10 +10,7 @@ import com.restaurant.app.demo.model.entity.MenuItem;
 import com.restaurant.app.demo.model.entity.Restaurant;
 import com.restaurant.app.demo.model.entity.enums.CustomerLevel;
 import com.restaurant.app.demo.model.entity.enums.Status;
-import com.restaurant.app.demo.repository.MenuItemRepository;
-import com.restaurant.app.demo.repository.RestaurantRepository;
-import com.restaurant.app.demo.repository.RoleRepository;
-import com.restaurant.app.demo.repository.UserRepository;
+import com.restaurant.app.demo.repository.*;
 import com.restaurant.app.demo.security.CustomUserDetailService;
 import com.restaurant.app.demo.security.JwtService;
 import com.restaurant.app.demo.service.CategoryService;
@@ -69,7 +66,11 @@ public abstract class BaseIntegrationTest {
     @Autowired
     private CustomUserDetailService customUserDetailService;
 
-    protected static final String TEST_JWT_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJBZXJvbWFuMjAyNSIsInJvbGVzIjpbIlJPTEVfQ1VTVE9NRVIiXSwiaWF0IjoxNzY3MDg5ODc5LCJleHAiOjE3NjcwOTM0Nzl9.jeqmQuuhVF3zwYUVLnKDMQlmt57h-5RRXwqMPDYN5DU";
+    @Autowired
+    private OrderRepository orderRepository;
+
+    protected static final String TEST_JWT_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJBZXJvbWFuMjAyNSIsInJvbGVzIjpbIlJPTEVfQ1VTVE9NRVIiXSwiaWF0IjoxNzY3NDMxODkxLCJleHAiOjE3Njc0MzU0OTF9.Fs9tsRKwav_--4HNahwNdwSa0J6NdU9seekaViUdXl8";
+    protected static final String TEST_JWT_ADMIN_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJMYW1lcjIwMjYiLCJyb2xlcyI6WyJST0xFX0FETUlOIl0sImlhdCI6MTc2NzQzMTk5MSwiZXhwIjoxNzY3NDM1NTkxfQ.1lGhfXmto_T8GKL7TpwBXxknxqf-FNpRMwtlJ_d41NY";
 
     protected UserResponseDto createUser() {
         RegisterRequest registerRequest =

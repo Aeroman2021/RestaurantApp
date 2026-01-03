@@ -50,5 +50,6 @@ public class CustomerScoreHistory {
         this.order = order;
         this.score = score;
         this.reason = reason;
+        createdAt = LocalDateTime.now();
     }
 }

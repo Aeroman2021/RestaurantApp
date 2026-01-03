@@ -1,67 +1,75 @@
 package com.restaurant.app.demo.model.entity.enums;
 
-import com.restaurant.app.demo.model.entity.Role;
+import com.restaurant.app.demo.excception.order.InvalidOrderStatusTransitionException;
 
 public enum Status {
 
     CART{
         @Override
-        public Status next(Role role) {
-            if(role.getName().equals("ROLE_CUSTOMER")){
+        public Status next(ActorRole role) {
+            if(role.equals(ActorRole.CUSTOMER)){
                 return CREATED;
             }
             throw invalid(role);
         }
 
         @Override
-        public Status cancel(Role role) {
-            return CANCELLED;
+        public Status cancel(ActorRole role) {
+            if(role.equals(ActorRole.CUSTOMER)){
+                return CANCELLED;
+            }
+            throw invalid(role);
         }
     },
 
-
     CREATED{
         @Override
-        public Status next(Role role) {
-            if(role.getName().equals("ROLE_CUSTOMER") ||role.getName().equals("ROLE_ADMIN")){
+        public Status next(ActorRole role) {
+            if(role.equals(ActorRole.CUSTOMER) ||role.equals(ActorRole.ADMIN)){
                 return PAID;
             }
             throw invalid(role);
         }
 
         @Override
-        public Status cancel(Role role) {
-            return CANCELLED;
+        public Status cancel(ActorRole role) {
+            if(role.equals(ActorRole.CUSTOMER) ||role.equals(ActorRole.ADMIN)){
+                return CANCELLED;
+            }
+            throw invalid(role);
         }
     },
 
     PAID{
         @Override
-        public Status next(Role role) {
-            if(role.getName().equals("ROLE_ADMIN")){
+        public Status next(ActorRole role) {
+            if(role.equals(ActorRole.ADMIN)){
                 return PREPARING;
             }
             throw invalid(role);
         }
 
         @Override
-        public Status cancel(Role role) {
-            return CANCELLED;
+        public Status cancel(ActorRole role) {
+            if(role.equals(ActorRole.CUSTOMER) || role.equals(ActorRole.ADMIN)){
+                return CANCELLED;
+            }
+            throw invalid(role);
         }
     },
 
     PREPARING{
         @Override
-        public Status next(Role role) {
-            if(role.getName().equals("ROLE_ADMIN")){
+        public Status next(ActorRole role) {
+            if(role.equals(ActorRole.ADMIN)){
                 return READY;
             }
             throw invalid(role);
         }
 
         @Override
-        public Status cancel(Role role) {
-            if(role.getName().equals("ROLE_ADMIN")){
+        public Status cancel(ActorRole role) {
+            if(role.equals(ActorRole.ADMIN)){
                 return CANCELLED;
             }
             throw invalid(role);
@@ -70,44 +78,42 @@ public enum Status {
 
     READY{
         @Override
-        public Status next(Role role) {
-            if(role.getName().equals("ROLE_ADMIN")){
+        public Status next(ActorRole role) {
+            if(role.equals(ActorRole.ADMIN)){
                 return DELIVERED;
             }
             throw invalid(role);
         }
 
         @Override
-        public Status cancel(Role role) {
-            throw new IllegalStateException("Cannot cancel ready order");
+        public Status cancel(ActorRole role) {
+            throw new InvalidOrderStatusTransitionException("Cannot cancel ready order");
         }
     },
 
     DELIVERED{
         @Override
-        public Status next(Role role) {
-            throw new IllegalStateException("Order already delivered");
+        public Status next(ActorRole role) {
+            throw new InvalidOrderStatusTransitionException("Order already delivered");
         }
         @Override
-        public Status cancel(Role role) {
-            throw new IllegalStateException("Cannot cancel delivered order");
+        public Status cancel(ActorRole role) {
+            throw new InvalidOrderStatusTransitionException("Cannot cancel delivered order");
         }
     },
 
     CANCELLED;
 
-    public  Status next(Role role){
-        throw new UnsupportedOperationException();
+    public  Status next(ActorRole role){
+        throw new InvalidOrderStatusTransitionException();
     }
 
-    public Status cancel(Role role){
-        throw new UnsupportedOperationException();
+    public Status cancel(ActorRole role){
+        throw new InvalidOrderStatusTransitionException();
     }
 
-    protected RuntimeException invalid(Role role) {
-        return new IllegalStateException(
-                "Role " + role + " cannot change status from " + this
-        );
+    protected RuntimeException invalid(ActorRole role) {
+        return new InvalidOrderStatusTransitionException(this,role);
     }
 
 }

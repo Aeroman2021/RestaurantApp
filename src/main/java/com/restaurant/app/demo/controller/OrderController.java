@@ -2,8 +2,11 @@ package com.restaurant.app.demo.controller;
 
 
 import com.restaurant.app.demo.model.dto.cart.CartRequestDto;
+import com.restaurant.app.demo.model.dto.order.CheckoutOrderRequestDto;
 import com.restaurant.app.demo.model.dto.order.OrderRequestDto;
 import com.restaurant.app.demo.model.dto.order.OrderResponseDto;
+import com.restaurant.app.demo.model.dto.order.OrderStatusResponseDto;
+import com.restaurant.app.demo.model.entity.enums.Status;
 import com.restaurant.app.demo.service.OrderService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,26 +34,34 @@ public class OrderController {
         return ApiResponse.ok(cart,"Cart created successfully");
     }
 
-    @PutMapping("/checkOut/{id}")
+    @PostMapping("{id}/checkOut")
     @PreAuthorize("hasRole('CUSTOMER')")
     public ApiResponse<OrderResponseDto> checkOut(@PathVariable Long id,
-                                                @RequestHeader("Idempotency-Key") String idempotencyKey) throws Exception {
-        OrderResponseDto result = orderService.checkOut(id,idempotencyKey);
+                                           @RequestBody CheckoutOrderRequestDto checkoutOrderRequestDto) throws Exception {
+        OrderResponseDto result = orderService.checkOut(checkoutOrderRequestDto,id);
         return ApiResponse.ok(result,"Order created successfully");
     }
 
     @PutMapping("/{orderId}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ApiResponse<OrderResponseDto> updateOrder(@PathVariable Long orderId, @RequestBody OrderRequestDto orderRequestDto){
+    public ApiResponse<OrderResponseDto> updateOrder(@PathVariable Long orderId,
+                                                     @RequestBody OrderRequestDto orderRequestDto){
         OrderResponseDto result = orderService.updateOrder(orderRequestDto,orderId);
         return ApiResponse.ok(result,"Order created successfully");
     }
 
-    @PutMapping("admin/{orderId}")
+    @PutMapping("update/admin/{orderId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<OrderResponseDto> updateStatus(@PathVariable Long orderId){
-        OrderResponseDto result = orderService.updateStatus(orderId);
-        return ApiResponse.ok(result,"Order created successfully");
+    public ApiResponse<OrderStatusResponseDto> updateOrderTheNextStatus(@PathVariable Long orderId){
+        OrderStatusResponseDto result = orderService.updateStatus(orderId);
+        return ApiResponse.ok(result,"Order status updated successfully");
+    }
+
+    @PutMapping("cancel/admin/{orderId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<OrderStatusResponseDto> cancelTheOrder(@PathVariable Long orderId){
+        OrderStatusResponseDto result = orderService.cancelTheOrder(orderId);
+        return ApiResponse.ok(result,"Order canceled successfully");
     }
 
     @GetMapping("/{orderId}")

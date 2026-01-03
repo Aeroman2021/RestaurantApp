@@ -1,18 +1,22 @@
 package com.restaurant.app.demo.service.impl;
 
+import com.restaurant.app.demo.excception.order.OrderNotFoundException;
 import com.restaurant.app.demo.model.dto.cart.CartRequestDto;
 import com.restaurant.app.demo.model.dto.menuItem.MenuResponseDto;
+import com.restaurant.app.demo.model.dto.order.CheckoutOrderRequestDto;
 import com.restaurant.app.demo.model.dto.order.OrderRequestDto;
 import com.restaurant.app.demo.model.dto.order.OrderResponseDto;
+import com.restaurant.app.demo.model.dto.order.OrderStatusResponseDto;
 import com.restaurant.app.demo.model.dto.orderItem.OrderItemRequestDto;
 import com.restaurant.app.demo.model.entity.*;
+import com.restaurant.app.demo.model.entity.enums.ActorRole;
 import com.restaurant.app.demo.model.entity.enums.CustomerLevel;
+import com.restaurant.app.demo.model.entity.enums.FulfillmentType;
 import com.restaurant.app.demo.model.entity.enums.Status;
 import com.restaurant.app.demo.repository.*;
 import com.restaurant.app.demo.service.OrderService;
 import com.restaurant.app.demo.service.PricingStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.restaurant.app.demo.service.impl.distanceFeeStartegy.DeliveryPricingService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -20,6 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -31,7 +36,6 @@ import java.util.stream.Collectors;
 @Service
 public class OrderServiceImpl implements OrderService {
 
-    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
@@ -42,12 +46,14 @@ public class OrderServiceImpl implements OrderService {
     private final PricingStrategyFactory pricingStrategyFactory;
     private final ScoreService scoreService;
     private final RestaurantRepository restaurantRepository;
+    private final DeliveryPricingService deliveryPricingService;
 
-    public OrderServiceImpl(OrderRepository orderRepository,UserRepository userRepository,
-                            MenuItemRepository menuItemRepository,RoleRepository roleRepository,
+    public OrderServiceImpl(OrderRepository orderRepository, UserRepository userRepository,
+                            MenuItemRepository menuItemRepository, RoleRepository roleRepository,
                             StringRedisTemplate redisTemplate, CustomerLevelEvaluator customerLevelEvaluator,
-                            PricingStrategyFactory pricingStrategyFactory,RestaurantRepository restaurantRepository,
-    ScoreService scoreService ) {
+                            PricingStrategyFactory pricingStrategyFactory, RestaurantRepository restaurantRepository,
+                            DeliveryPricingService deliveryPricingService,
+                            ScoreService scoreService) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.menuItemRepository = menuItemRepository;
@@ -57,6 +63,7 @@ public class OrderServiceImpl implements OrderService {
         this.pricingStrategyFactory = pricingStrategyFactory;
         this.scoreService= scoreService;
         this.restaurantRepository=restaurantRepository;
+        this.deliveryPricingService=deliveryPricingService;
     }
 
 
@@ -125,7 +132,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponseDto checkOut(Long orderId,String idempotencyKey) throws Exception {
+    public OrderResponseDto checkOut(CheckoutOrderRequestDto checkoutOrderRequestDto, Long id) {
         Collection<? extends GrantedAuthority> authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
         boolean roleIsCustomer = authorities.stream().anyMatch(r -> r.getAuthority().equals("ROLE_CUSTOMER"));
 
@@ -133,57 +140,46 @@ public class OrderServiceImpl implements OrderService {
         String userName = auth.getName();
         User foundedUser = userRepository.findByUserName(userName).orElseThrow(() -> new RuntimeException("User not found"));
 
-        Order existOrder = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("order not found"));
+        Order existOrder = orderRepository.findById(id).orElseThrow(() -> new RuntimeException("order not found"));
         User user = userRepository.findById(existOrder.getUser().getId()).orElseThrow(()-> new RuntimeException("User not found"));
 
         if(!foundedUser.getId().equals(user.getId()))
             throw new RuntimeException("The cart is not belong to the current user");
 
-        String redisKey = "order created: " + user.getId() + " : " + idempotencyKey;
-        String cached = redisTemplate.opsForValue().get(redisKey);
+        if(!existOrder.getStatus().equals(Status.CART))
+            throw new RuntimeException("Invalid Order Status");
 
-        if(cached != null && !cached.equals("PROCESSING")){
-            return showOrderDetails(Long.valueOf(cached));
+        existOrder.setOrderNumber(UUID.randomUUID().toString());
+        if (roleIsCustomer) {
+            existOrder.setStatus(existOrder.getStatus().next(ActorRole.CUSTOMER));
         }
 
-        Boolean locked = redisTemplate.opsForValue().setIfAbsent(redisKey, "PROCESSING", Duration.ofMinutes(5));
+        FulfillmentType fulfillmentType = FulfillmentType.valueOf(checkoutOrderRequestDto.fulFillmentType());
 
-        if (Boolean.FALSE.equals(locked)) {
-            throw new IllegalStateException("Order is being processed");
+        if(fulfillmentType.equals(FulfillmentType.DELIVERY)){
+            DeliveryPricingService.DeliveryQuote quote = deliveryPricingService.quote(existOrder.getRestaurant().getLat(),
+                    existOrder.getRestaurant().getLng(),
+                    checkoutOrderRequestDto.deliveryLat(),
+                    checkoutOrderRequestDto.deliveryLng());
+            existOrder.setDeliveryFee(quote.fee());
+            existOrder.setDistanceKm(quote.distanceKm());
         }
 
-        try{
+        existOrder.setFulfillmentType(fulfillmentType);
+        existOrder.setDeliveryAddressText(checkoutOrderRequestDto.deliveryAddressText());
+        existOrder.setDeliveryLat(checkoutOrderRequestDto.deliveryLat());
+        existOrder.setDeliveryLng(checkoutOrderRequestDto.deliveryLng());
 
-            if(!existOrder.getStatus().equals(Status.CART))
-                throw new RuntimeException("Invalid Order Status");
+        CustomerLevel level = customerLevelEvaluator.evaluate(user.getTotalScore());
+        PricingStrategy pricingStrategy = pricingStrategyFactory.getStrategy(level);
+        BigDecimal finalPrice = pricingStrategy.calculateFinalPrice(existOrder);
+        existOrder.setTotalPrice(finalPrice.add(existOrder.getDeliveryFee()));
 
-            existOrder.setOrderNumber(UUID.randomUUID().toString());
-            existOrder.setCreatedAt(LocalDateTime.now());
+        existOrder.setCheckedOutAt(LocalDateTime.now());
+        Order savedOrder = orderRepository.save(existOrder);
 
-            if (roleIsCustomer) {
-                existOrder.setStatus(existOrder.getStatus().next(roleRepository.findByName("ROLE_CUSTOMER").get()));
-            }
-
-            CustomerLevel level = customerLevelEvaluator.evaluate(user.getTotalScore());
-            PricingStrategy pricingStrategy = pricingStrategyFactory.getStrategy(level);
-            BigDecimal finalPrice = pricingStrategy.calculateFinalPrice(existOrder);
-            existOrder.setTotalPrice(finalPrice);
-
-            Order savedOrder = orderRepository.save(existOrder);
-
-            scoreService.addScore(user,savedOrder);
-
-            redisTemplate.opsForValue().set(
-                    redisKey,
-                    savedOrder.getId().toString(),
-                    Duration.ofHours(24)
-            );
-
-            return showOrderDetails(savedOrder.getId());
-        }catch (Exception e){
-            redisTemplate.delete(redisKey);
-            throw e;
-        }
+        scoreService.addScore(user,savedOrder);
+        return showOrderDetails(savedOrder.getId());
     }
 
     public BigDecimal calculateFinalPrice(Order order) {
@@ -249,22 +245,32 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponseDto updateStatus(Long orderId) {
-        Collection<? extends GrantedAuthority> authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
-        boolean roleIsAdmin = authorities.stream().anyMatch(r -> r.getAuthority().equals("ADMIN"));
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("order Not found"));
+    @Transactional
+    public OrderStatusResponseDto updateStatus(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(OrderNotFoundException::new);
 
-        if (roleIsAdmin && order.getStatus() != null) {
-            order.setStatus(order.getStatus().next(roleRepository.findByName("ADMIN").get()));
-        }
+       order.setStatus(order.getStatus().next(ActorRole.ADMIN));
+        Order savedOrder = orderRepository.save(order);
+        return new OrderStatusResponseDto(savedOrder.getId(),savedOrder.getStatus(),savedOrder.getUpdatedAt());
+    }
 
-        Order result = orderRepository.save(order);
-        return showOrderDetails(result.getId());
+    @Override
+    public OrderStatusResponseDto cancelTheOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(OrderNotFoundException::new);
+
+        order.setStatus(order.getStatus().cancel(ActorRole.ADMIN));
+        Order savedOrder = orderRepository.save(order);
+        return new OrderStatusResponseDto(savedOrder.getId(),savedOrder.getStatus(),savedOrder.getUpdatedAt());
     }
 
     public OrderResponseDto showOrderDetails(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("order Not found"));
+
+        Restaurant restaurant = restaurantRepository.findById(order.getRestaurant().getId())
+                .orElseThrow(() -> new RuntimeException("Restaurant Not found"));
 
         List<MenuResponseDto> menuItems = order.getOrderItems().stream()
                 .map(oi -> new MenuResponseDto(oi.getMenuItem().getName(), oi.getQuantity(), oi.getMenuItem().getPrice())).toList();
@@ -273,7 +279,7 @@ public class OrderServiceImpl implements OrderService {
                 .map(mi -> mi.price().multiply(BigDecimal.valueOf(mi.quantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        return new OrderResponseDto(order.getId(), order.getStatus(), order.getOrderNumber(), menuItems, totalPrice);
+        return new OrderResponseDto(order.getId(),restaurant.getName(),order.getStatus(), order.getOrderNumber(), menuItems, totalPrice);
     }
 
 
@@ -296,6 +302,7 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.getAll(pageable)
                 .map(o->new OrderResponseDto(
                         o.getId(),
+                        o.getRestaurant().getName(),
                         o.getStatus(),
                         o.getOrderNumber(),
                         o.getOrderItems().stream()
@@ -306,4 +313,6 @@ public class OrderServiceImpl implements OrderService {
                                 .map(mi -> mi.getMenuItem().getPrice().multiply(BigDecimal.valueOf(mi.getQuantity())))
                                 .reduce(BigDecimal.ZERO, BigDecimal::add)));
     }
+
+
 }
